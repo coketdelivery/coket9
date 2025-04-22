@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>걸코충의 이상형 찾기 게임</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      background: url('back.jpg') no-repeat center/cover;
+      min-height: 100vh;
+      text-align: center;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+    .card {
+      background-color: rgba(255, 255, 255, 0.9);
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 400px;
+      width: 90%;
+      margin: 20px auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      margin-bottom: 16px;
+      font-size: 24px;
+      color: #333;
+    }
+    p.subtitle {
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #555;
+      line-height: 1.4;
+    }
+    button {
+      display: block;
+      margin: 12px auto;
+      padding: 14px 20px;
+      font-size: 18px;
+      max-width: 90%;
+      width: 280px;
+      border-radius: 12px;
+      border: none;
+      background-color: #ffafcc;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #ff8fa3;
+    }
+    #question-box, #result-box {
+      display: none;
+    }
+    #question-text {
+      margin-bottom: 20px;
+      font-size: 18px;
+      color: #333;
+    }
+    img {
+      width: 80%;
+      max-width: 300px;
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+    #result-text {
+      font-size: 20px;
+      margin-top: 16px;
+      color: #333;
+    }
+    .footer {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #ffffff;
+      border-radius: 12px 12px 0 0;
+      padding: 12px 20px;
+      color: #333;
+      font-size: 12px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+      text-align: center;
+      z-index: 100;
+    }
+    .footer a {
+      color: #ff8fa3;
+      text-decoration: none;
+    }
+    .footer a:hover {
+      text-decoration: underline;
+    }
+    @media (max-width: 500px) {
+      h1, h2 { font-size: 20px; }
+      button { font-size: 16px; padding: 12px 18px; }
+      #question-text { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 🎵 오디오 요소들 -->
+  <audio id="bg-music" src="back.mp3" loop></audio>
+  <audio id="result-sound" src="2.mp3"></audio>
+  <audio id="button-sound" src="3.mp3"></audio>
+
+  <!-- 인트로 화면 -->
+  <div id="start-box" class="card">
+    <h1>걸코충의 이상형 찾기</h1>
+    <p class="subtitle">© 2025 코켓게임즈. All rights reserved.<br>
+      유튜브 '걸코_Gulko' 저작권 콘텐츠입니다.<br>
+      <a href="https://www.youtube.com/@Gulko" target="_blank" rel="noopener noreferrer">https://www.youtube.com/@Gulko</a>
+    </p>
+    <button onclick="startGame('female')">여성으로 시작</button>
+    <button onclick="startGame('male')">남성으로 시작</button>
+  </div>
+
+  <!-- 질문 화면 -->
+  <div id="question-box" class="card">
+    <h2>이상형 선택 중...</h2>
+    <div id="question-text"></div>
+    <button onclick="choose(0)"></button>
+    <button onclick="choose(1)"></button>
+  </div>
+
+  <!-- 결과 화면 -->
+  <div id="result-box" class="card">
+    <h2>최종 걸코충의 이상형 결과!</h2>
+    <img id="result-img" src="" alt="결과 이미지">
+    <div id="result-text"></div>
+    <button onclick="resetGame()">다시하기</button>
+  </div>
+
+  <!-- 하단 저작권 -->
+  <div class="footer">
+    © 2025 코켓게임즈. All rights reserved.<br>
+    유튜브 '걸코_Gulko' 저작권 콘텐츠입니다.<br>
+    <a href="https://www.youtube.com/@Gulko" target="_blank" rel="noopener noreferrer">https://www.youtube.com/@Gulko</a>
+  </div>
+
+  <script>
+    const questions = [
+      ["술을 좋아한다", "싫어한다"],
+      ["웃는 얼굴", "무표정"],
+      ["키 큰 사람", "키 작은 사람"],
+      ["책 좋아하는 사람", "운동 좋아하는 사람"],
+      ["요리 잘하는 사람", "청소 잘하는 사람"],
+      ["잠 많은 사람", "아침형 인간"],
+      ["게임 좋아하는 사람", "여행 좋아하는 사람"],
+      ["사진 찍기 좋아하는 사람", "영화광"],
+      ["SNS 많이 하는 사람", "안 하는 사람"],
+      ["목소리 좋은 사람", "눈빛 좋은 사람"],
+      ["자상한 사람", "능력 있는 사람"],
+      ["나만 바라보는 사람", "모두에게 친절한 사람"],
+      ["패션센스 좋은 사람", "편한 스타일"],
+      ["계획형", "즉흥형"],
+      ["웃음 코드가 같은 사람", "취향이 비슷한 사람"],
+      ["독립적인 사람", "의존적인 사람"],
+      ["열정적인 사람", "차분한 사람"],
+      ["감성적인 사람", "이성적인 사람"]
+    ];
+
+    let currentQuestion = 0;
+    let gender = '';
+
+    const bgMusic = document.getElementById("bg-music");
+    const resultSound = document.getElementById("result-sound");
+    const buttonSound = document.getElementById("button-sound");
+
+    document.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        buttonSound.currentTime = 0;
+        buttonSound.play();
+      });
+    });
+
+    function startGame(selectedGender) {
+      gender = selectedGender;
+      document.getElementById("start-box").style.display = "none";
+      document.getElementById("question-box").style.display = "block";
+      showQuestion();
+      bgMusic.currentTime = 0;
+      bgMusic.play().catch(() => console.log("사용자 상호작용 후 재생 필요"));
+    }
+
+    function showQuestion() {
+      const q = questions[currentQuestion];
+      document.getElementById("question-text").textContent = `Q${currentQuestion + 1}. ${q[0]} / ${q[1]}`;
+      const opts = document.querySelectorAll('#question-box button');
+      opts[0].textContent = q[0];
+      opts[1].textContent = q[1];
+    }
+
+    function choose(choice) {
+      currentQuestion++;
+      if (currentQuestion >= questions.length) {
+        showResult();
+      } else {
+        showQuestion();
+      }
+    }
+
+    function showResult() {
+      document.getElementById("question-box").style.display = "none";
+      document.getElementById("result-box").style.display = "block";
+
+      const img = document.getElementById("result-img");
+      const text = document.getElementById("result-text");
+
+      if (gender === 'female') {
+        img.src = "2.JPG";
+        text.innerHTML = "자기야 나랑 함께 사귈래?코자가...<br>우리 살림은 <br>코켓배송에서 라면구매하자❤️";
+      } else {
+        img.src = "3.JPG";
+        text.innerHTML = "옵 나랑 평생 살자. 코녀가..<br>옵 우리 살림은 <br>코켓배송에서 구매해❤️";
+      }
+
+      resultSound.play();
+    }
+
+    function resetGame() {
+      currentQuestion = 0;
+      gender = '';
+      document.getElementById("result-box").style.display = "none";
+      document.getElementById("start-box").style.display = "block";
+      bgMusic.pause();
+      bgMusic.currentTime = 0;
+    }
+  </script>
+</body>
+</html>
